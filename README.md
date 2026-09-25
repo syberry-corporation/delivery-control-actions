@@ -35,7 +35,7 @@ GitLab components:
 
 ```yaml
 # PR: scan, then hand the two files to the PR gate (upload `supervisory/`, download it back to `supervisory`)
-- uses: syberry-corporation/delivery-control-actions/security-scan@1.4.30
+- uses: syberry-corporation/delivery-control-actions/security-scan@1.4.32
   with:
     toolchain: php            # php | node | java | python
     scan_target: image        # `filesystem` for a component with no container image
@@ -43,7 +43,7 @@ GitLab components:
 
 # Build: after logging in to the registry
 - id: image
-  uses: syberry-corporation/delivery-control-actions/build-image@1.4.30
+  uses: syberry-corporation/delivery-control-actions/build-image@1.4.32
   with:
     image_repository: ${{ vars.ECR_REGISTRY }}/backend
     version: ${{ steps.v.outputs.version }}   # e.g. 1.0.<run number>; never an env name
@@ -54,7 +54,7 @@ GitLab components:
 
 # Static build: after `yarn build`, with credentials that can write the artifact bucket
 - id: artifact
-  uses: syberry-corporation/delivery-control-actions/publish-static-artifact@1.4.30
+  uses: syberry-corporation/delivery-control-actions/publish-static-artifact@1.4.32
   with:
     artifact_base_uri: s3://${{ vars.ARTIFACT_BUCKET }}/frontend
     version: ${{ steps.v.outputs.version }}
@@ -103,7 +103,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with: { name: backend-reports, path: . }
 
-      - uses: syberry-corporation/delivery-control-actions/supervise-pr-gate@1.4.30
+      - uses: syberry-corporation/delivery-control-actions/supervise-pr-gate@1.4.32
         with:
           supervisory_eval_url: ${{ vars.SUPERVISORY_EVAL_URL }}
           supervisory_project: ${{ vars.SUPERVISORY_PROJECT }}
@@ -122,7 +122,7 @@ The container gate reads the image back **out of the registry** — its own SBOM
     aws-region: eu-central-1
 - uses: aws-actions/amazon-ecr-login@v2
 
-- uses: syberry-corporation/delivery-control-actions/supervise-build-gate@1.4.30
+- uses: syberry-corporation/delivery-control-actions/supervise-build-gate@1.4.32
   with:
     supervisory_eval_url: ${{ vars.SUPERVISORY_EVAL_URL }}
     supervisory_project: ${{ vars.SUPERVISORY_PROJECT }}
@@ -135,7 +135,7 @@ For a build that publishes an artifact instead of an image, use `supervise-build
 the build's metadata file — that file is the build telling the gate what it published and where:
 
 ```yaml
-- uses: syberry-corporation/delivery-control-actions/supervise-build-gate-artifact@1.4.30
+- uses: syberry-corporation/delivery-control-actions/supervise-build-gate-artifact@1.4.32
   with:
     source: s3 # or: codeartifact
     supervisory_eval_url: ${{ vars.SUPERVISORY_EVAL_URL }}
@@ -163,7 +163,7 @@ deploy:
     contents: read
     id-token: write
   steps:
-    - uses: syberry-corporation/delivery-control-actions/supervise-deploy-gate@1.4.30
+    - uses: syberry-corporation/delivery-control-actions/supervise-deploy-gate@1.4.32
       with:
         phase: pre
         supervisory_eval_url: ${{ vars.SUPERVISORY_EVAL_URL }}
@@ -173,7 +173,7 @@ deploy:
 
     - run: ./deploy.sh > response.json # must report what was actually published
 
-    - uses: syberry-corporation/delivery-control-actions/supervise-deploy-gate@1.4.30
+    - uses: syberry-corporation/delivery-control-actions/supervise-deploy-gate@1.4.32
       with:
         phase: post
         supervisory_eval_url: ${{ vars.SUPERVISORY_EVAL_URL }}
