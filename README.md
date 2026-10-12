@@ -35,7 +35,7 @@ GitLab components:
 
 ```yaml
 # PR: scan, then hand the two files to the PR gate (upload `supervisory/`, download it back to `supervisory`)
-- uses: syberry-corporation/delivery-control-actions/security-scan@1.6.16
+- uses: syberry-corporation/delivery-control-actions/security-scan@1.6.17
   with:
     toolchain: php            # php | node | java | python
     scan_target: image        # `filesystem` for a component with no container image
@@ -43,7 +43,7 @@ GitLab components:
 
 # Build: after logging in to the registry
 - id: image
-  uses: syberry-corporation/delivery-control-actions/build-image@1.6.16
+  uses: syberry-corporation/delivery-control-actions/build-image@1.6.17
   with:
     image_repository: ${{ vars.ECR_REGISTRY }}/backend
     version: ${{ steps.v.outputs.version }}   # e.g. 1.0.<run number>; never an env name
@@ -54,7 +54,7 @@ GitLab components:
 
 # Static build: after `yarn build`, with credentials that can write the artifact bucket
 - id: artifact
-  uses: syberry-corporation/delivery-control-actions/publish-static-artifact@1.6.16
+  uses: syberry-corporation/delivery-control-actions/publish-static-artifact@1.6.17
   with:
     artifact_base_uri: s3://${{ vars.ARTIFACT_BUCKET }}/frontend
     version: ${{ steps.v.outputs.version }}
@@ -62,6 +62,21 @@ GitLab components:
 # -> steps.artifact.outputs.metadata_file: pass it to supervise-build-gate-artifact (metadata_file) and to
 #    the post-deploy gate (artifact_metadata_file)
 ```
+
+### .NET
+
+`toolchain: dotnet` runs `dotnet restore` (every solution in the component directory, or every project when
+there is none; `install_command` overrides it) and reads what restore resolved — each package with the feed
+it was actually downloaded from. The runner needs the .NET SDK (`ubuntu-latest` has it; otherwise
+`actions/setup-dotnet`), and a private feed must be authenticated before the scan, or restore fails by name.
+What each control needs from the project:
+
+| Control | In the project |
+|---|---|
+| SCM-3.3 lock files | `<RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>` (once, in `Directory.Build.props`) and every `packages.lock.json` committed. A project with no `PackageReference` needs none. |
+| SCM-3.1 sources | `api.nuget.org` is approved; a private feed (Azure Artifacts, GitHub Packages) is approved per project in its supervisory registration. |
+| SD-2.4.2 tests | `dotnet test --logger trx` — the gate finds `TestResults/*.trx` on its own; pass `test_tool: dotnet-test`. |
+| SD-2.4.1 analysis | Roslyn analyzers writing SARIF: `<ErrorLog>$(MSBuildThisFileDirectory)build/reports/roslyn/$(MSBuildProjectName).sarif,version=2.1</ErrorLog>` in `Directory.Build.props`; the gate reads `**/reports/roslyn/*.sarif` as tool `roslyn`. |
 
 `security-scan` fails the step on unwaived critical/high findings (`fail_on_findings: false` to report
 only); the evidence is written either way. On Node older than 16.9 set `install_command` (the default
@@ -103,7 +118,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with: { name: backend-reports, path: . }
 
-      - uses: syberry-corporation/delivery-control-actions/supervise-pr-gate@1.6.16
+      - uses: syberry-corporation/delivery-control-actions/supervise-pr-gate@1.6.17
         with:
           supervisory_eval_url: ${{ vars.SUPERVISORY_EVAL_URL }}
           supervisory_project: ${{ vars.SUPERVISORY_PROJECT }}
@@ -122,7 +137,7 @@ The container gate reads the image back **out of the registry** — its own SBOM
     aws-region: eu-central-1
 - uses: aws-actions/amazon-ecr-login@v2
 
-- uses: syberry-corporation/delivery-control-actions/supervise-build-gate@1.6.16
+- uses: syberry-corporation/delivery-control-actions/supervise-build-gate@1.6.17
   with:
     supervisory_eval_url: ${{ vars.SUPERVISORY_EVAL_URL }}
     supervisory_project: ${{ vars.SUPERVISORY_PROJECT }}
@@ -135,7 +150,7 @@ For a build that publishes an artifact instead of an image, use `supervise-build
 the build's metadata file — that file is the build telling the gate what it published and where:
 
 ```yaml
-- uses: syberry-corporation/delivery-control-actions/supervise-build-gate-artifact@1.6.16
+- uses: syberry-corporation/delivery-control-actions/supervise-build-gate-artifact@1.6.17
   with:
     source: s3 # or: codeartifact
     supervisory_eval_url: ${{ vars.SUPERVISORY_EVAL_URL }}
@@ -163,7 +178,7 @@ deploy:
     contents: read
     id-token: write
   steps:
-    - uses: syberry-corporation/delivery-control-actions/supervise-deploy-gate@1.6.16
+    - uses: syberry-corporation/delivery-control-actions/supervise-deploy-gate@1.6.17
       with:
         phase: pre
         supervisory_eval_url: ${{ vars.SUPERVISORY_EVAL_URL }}
@@ -173,7 +188,7 @@ deploy:
 
     - run: ./deploy.sh > response.json # must report what was actually published
 
-    - uses: syberry-corporation/delivery-control-actions/supervise-deploy-gate@1.6.16
+    - uses: syberry-corporation/delivery-control-actions/supervise-deploy-gate@1.6.17
       with:
         phase: post
         supervisory_eval_url: ${{ vars.SUPERVISORY_EVAL_URL }}

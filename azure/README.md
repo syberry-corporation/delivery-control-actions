@@ -30,6 +30,14 @@ Three more produce what the gates read:
 The parameters have the names of the GitHub actions' inputs; the reference for each one is the GitHub
 action of the same name ([`../README.md`](../README.md)). The gates add `service_connection`, below.
 
+## .NET
+
+`security-scan.yml` with `toolchain: dotnet` restores and reads every NuGet package with the feed it came
+from; what a project has to switch on for SCM-3.3, SCM-3.1, SD-2.4.2 and SD-2.4.1 is in the
+[.NET section of the actions' README](../README.md#net). On Azure Pipelines: `UseDotNet@2` when the agent
+lacks the SDK you build with, and `NuGetAuthenticate@1` before the scan when restore reads an Azure
+Artifacts feed — that feed's prefix is approved per project in its supervisory registration.
+
 ## Before the first run
 
 1. **The supervisory project is registered for your service connection.** Azure DevOps mints an OIDC token
@@ -60,7 +68,7 @@ resources:
     - repository: delivery_control
       type: github
       name: syberry-corporation/delivery-control-actions
-      ref: refs/tags/1.6.16
+      ref: refs/tags/1.6.17
       endpoint: <your GitHub service connection>
 
 variables:
@@ -205,6 +213,11 @@ project, and names the repository, environment and commit it is about. Treat the
 * **Outputs are step output variables**, addressed by the step's `name:`.
 * **The environment, repository and commit travel in the evidence**, limited server-side as above; on
   GitHub and GitLab the token carries them.
+* **So do how the run started and which commit defined it** — `Build.Reason` and `Build.SourceVersion`,
+  in every submission's `source`. The service hands them to the policy as the claims a token would carry;
+  a `Manual` run is not automated. Nothing verifies them: the decision lists them in
+  `authentication.assertedClaims`, and one whose control read them carries the advisory
+  `PIPELINE_FACTS_SELF_ASSERTED`, so the record says they are the run's own word.
 * **A pull-request build names the source commit and branch**, not the merge commit Azure DevOps checks
   out — so build traceability points at a commit that exists.
 * **Advisory notes** are left on Azure Repos pull requests when the build service has "Contribute to pull
