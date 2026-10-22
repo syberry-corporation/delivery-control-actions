@@ -68,7 +68,7 @@ resources:
     - repository: delivery_control
       type: github
       name: syberry-corporation/delivery-control-actions
-      ref: refs/tags/1.8.1
+      ref: refs/tags/1.9.0
       endpoint: <your GitHub service connection>
 
 variables:
